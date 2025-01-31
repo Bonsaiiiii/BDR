@@ -2,22 +2,24 @@
 #define Scroller_h
 
 #include <Arduino.h>
-#include <Adafruit_SSD1306.h>  // Include the display library
+#include <Adafruit_SSD1306.h>
 
 class Scroller {
   private:
+    Adafruit_SSD1306& display;
     unsigned long lastUpdate = 0;
-    bool scrollReverse = 0;
-    unsigned long currentMillis;
+    bool scrollReverse = false;
     int initialPos, endPos, heightPos;
-    char* variableText;
+    const char* variableText;
     int scrollVal;
-    Adafruit_SSD1306* display;  // Pointer to an Adafruit_SSD1306 object
 
   public:  
-    Scroller(int initialPos, int endPos, int heightPos, char* variableText, Adafruit_SSD1306* display);  // Constructor
+    Scroller(int initialPos, int endPos, int heightPos, const char* variableText, Adafruit_SSD1306& display);
+    void scrollLine();
 
-    void scrollLine();  // Method to scroll the line
+  private:
+    void handleLongText(int displayArea, int textWidth);
+    void handleShortText();
 };
 
 #endif
