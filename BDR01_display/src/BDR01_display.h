@@ -13,12 +13,13 @@ public:
     void initDisplay();
     void scrollerInitClientSource(char* Wrede, char* Wip, char* Nrede);
     void scrollerInitLocal(char* Wssid, char* Wpass, char* Nhost, char* Nmtpt, char* Nuser, char* Npass);
-    void page_client(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* rssi, char* Nlaten, char* uptim,
+    void page_client(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, char* Wip, char* Nrede, char* rssi, char* Nlaten, char* uptim,
                      char* lat, char* lon, char* alt, char* pre, char* utc, char* tensao, char* pacot, char* Slaten, char* modelo, 
                      char* firmware, char* serial);
-    void page_local(int page, int statusOUT, int Ssaida, int PDvolts, char* Wusers, char* Nport, char* baud, char* pari, char* data,
-                    char* stop, char* flow, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial);
-    void page_source(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* rssi, char* Nlaten, char* uptim,
+    void page_local(int page, int statusOUT, int Ssaida, int PDvolts, char* Wssid, char* Wpass, char* Nhost, char* Nmtpt, char* Nuser, char* Npass,
+        char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char* flow, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware,
+        char* serial);
+    void page_source(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, char* Wip, char* Nrede, char* rssi, char* Nlaten, char* uptim,
                      char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial);
     Scroller* scrollers[6];
     Adafruit_SSD1306 display;

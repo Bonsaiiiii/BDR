@@ -67,10 +67,15 @@ void BDRDisplay::scrollerInitLocal(char* Wssid, char* Wpass, char* Nhost, char* 
   scrollers[5] = new Scroller(30, 128, 33, Npass, display);
 }
 
-void BDRDisplay::page_client(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* rssi, char* Nlaten, char* uptim, 
-                char* lat, char* lon, char* alt, char* pre, char* utc, char* tensao, char* pacot, char* Slaten, 
+void BDRDisplay::page_client(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, char* Wip, char* Nrede, char* rssi, char* Nlaten,
+                char* uptim, char* lat, char* lon, char* alt, char* pre, char* utc, char* tensao, char* pacot, char* Slaten, 
                 char* modelo, char* firmware, char* serial) {
   display_fixo(1, page, statusOUT);
+  static bool scrollerInit = false;
+  if (!scrollerInit) {
+    scrollerInitClientSource(Wrede, Wip, Nrede);
+    scrollerInit = true;
+  }
   switch(page) {
     case 0:
       page_client_source(0, Swifi, Sntrip, Ssaida, rssi, Nlaten, uptim);
@@ -99,9 +104,14 @@ void BDRDisplay::page_client(int page, int statusOUT, int Swifi, int Sntrip, int
   }
 }
 
-void BDRDisplay::page_local(int page, int statusOUT, int Ssaida, int PDvolts, char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop,
-char* flow, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial) {
+void BDRDisplay::page_local(int page, int statusOUT, int Ssaida, int PDvolts, char* Wssid, char* Wpass, char* Nhost, char* Nmtpt, char* Nuser, char* Npass,
+char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char* flow, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial) {
   display_fixo(2, page, statusOUT);
+  static bool scrollerInit = false;
+  if (!scrollerInit) {
+    scrollerInitLocal(Wssid, Wpass, Nhost, Nmtpt, Nuser, Npass);
+    scrollerInit = true;
+  }
   switch(page) {
     case 0:
       page_only_local(0, Wusers, Nport, baud, pari, data, stop, flow);
@@ -130,9 +140,14 @@ char* flow, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmwar
   }
 }
 
-void BDRDisplay::page_source(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* rssi, char* Nlaten, char* uptim,
-char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial) {
+void BDRDisplay::page_source(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, char* Wip, char* Nrede, char* rssi, char* Nlaten,
+  char* uptim, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial) {
   display_fixo(3, page, statusOUT);
+  static bool scrollerInit = false;
+  if (!scrollerInit) {
+    scrollerInitClientSource(Wrede, Wip, Nrede);
+    scrollerInit = true;
+  }
   switch(page) {
     case 0:
       page_client_source(0, Swifi, Sntrip, Ssaida, rssi, Nlaten, uptim);
@@ -556,6 +571,7 @@ void BDRDisplay::display_config(int page, bool conectado, int statusPD, char* mo
   static unsigned long lastBlinkTime1;
   display.fillRect(0, 10, 128, 45, 0);
   display.setTextSize(1);
+  display_fixo(1, page, statusPD);
   switch(page){
     case 0:
       if (millis() - lastBlinkTime1 >= 2000){
@@ -565,32 +581,32 @@ void BDRDisplay::display_config(int page, bool conectado, int statusPD, char* mo
       if (state) {
         display.fillRect(3, 12, 121, 9, 0);
         display.setTextColor(SSD1306_WHITE);
-        display.setCursor(4, 11);
+        display.setCursor(4, 13);
         display.println("MODO DE CONFIGURACAO");
       }else{
         display.fillRect(3, 12, 121, 9, 1);
         display.setTextColor(SSD1306_BLACK);
-        display.setCursor(4, 11);
+        display.setCursor(4, 13);
         display.println("MODO DE CONFIGURACAO");
       }
       display.setTextColor(SSD1306_WHITE);
       if(conectado == false){
         display.setCursor(13, 22);
-        display.println("Conecte-se a rede");
-        display.setCursor(25, 44);
-        display.println("BDR-CFG-30:15");
+        display.println("CONECTE-SE A REDE");
+        display.setCursor(40, 44);
+        display.println("BDR-" + String(ESP.getEfuseMac()).substring(String(ESP.getEfuseMac()).length() - 4));
       } else {
         display.setCursor(4, 22);
-        display.println("Aplicativo Conectado");
+        display.println("APLICATIVO CONECTADO");
         display.setCursor(16, 44);
-        display.println("verifique o app!");
+        display.println("VERIFIQUE O APP!");
       }
     break;
     case 1:
       display.setCursor(19, 22);
-      display.print("Sair do modo de");
+      display.print("SAIR DO MODO DE");
       display.setCursor(25, 33);
-      display.print("configuracao?");
+      display.print("CONFIGURACAO?");
     break;
     case 2:
       tela_info_alimentacao(statusPD);
