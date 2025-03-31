@@ -8,9 +8,11 @@
 
 class NTRIPSource {
 public:
-    int NTRIPSourceSetup(WiFiClient& client, int HTTPPort, char* Network, char* Password, char* Host, char* MountPoint, int rev, char* NTPUser, char* NTPPass, char* srcSTR);
-    int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char* Network, char* Password, char* Host, char* MountPoint, int rev, char* NTPUser, char* NTPPass, char* srcSTR);
-    bool subStation(WiFiClient& client, int &port, char* host, char* mntpnt, int rev, char* user, char* psw, char* info); 
+    //int sourceError;
+    //int getSourceError();
+    int NTRIPSourceSetup(char* Network, char* Password);
+    //int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char* Network, char* Password, char* Host, char* MountPoint, int rev, char* NTPUser, char* NTPPass, char* srcSTR); 
+    int subStation(WiFiClient& client, int port, char* host, char* mntpnt, String rev, char* user, char* psw, char* info); 
 };
 
 #endif // NTRIPSOURCE_H_

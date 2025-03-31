@@ -52,10 +52,10 @@ BDRDisplay::~BDRDisplay() {
   }
 }
 
-void BDRDisplay::scrollerInitClientSource(char* Wrede, char* Wip, char* Nrede) {
+void BDRDisplay::scrollerInitClientSource(char* Wrede, const char* Wip, char* Nrede) {
   scrollers[0] = new Scroller(30, 128, 22, Wrede, display);
   scrollers[1] = new Scroller(18, 74, 44, Wip, display);
-  scrollers[2] = new Scroller(30, 128, 22, Nrede, display);
+  scrollers[2] = new Scroller(30, 74, 22, Nrede, display);
 }
 
 void BDRDisplay::scrollerInitLocal(char* Wssid, char* Wpass, char* Nhost, char* Nmtpt, char* Nuser, char* Npass) {
@@ -67,10 +67,10 @@ void BDRDisplay::scrollerInitLocal(char* Wssid, char* Wpass, char* Nhost, char* 
   scrollers[5] = new Scroller(30, 128, 33, Npass, display);
 }
 
-void BDRDisplay::page_client(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, char* Wip, char* Nrede, char* rssi, char* Nlaten,
-                char* uptim, char* lat, char* lon, char* alt, char* pre, char* utc, char* tensao, char* pacot, char* Slaten, 
-                char* modelo, char* firmware, char* serial) {
-  display_fixo(1, page, statusOUT);
+void BDRDisplay::page_client(int page, char* statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, const char* Wip, char* Nrede, int rssi, String Nlaten,
+                char* uptim, String locat, char* lat, char* lon, char* alt, char* pre, char* utc, char* tensao, String pacot, String Slaten, 
+                char* modelo, char* firmware, String serial) {
+  display_fixo(1, page, String(statusOUT));
   static bool scrollerInit = false;
   if (!scrollerInit) {
     scrollerInitClientSource(Wrede, Wip, Nrede);
@@ -87,7 +87,7 @@ void BDRDisplay::page_client(int page, int statusOUT, int Swifi, int Sntrip, int
       page_client_source(2, Swifi, Sntrip, Ssaida, rssi, Nlaten, uptim);
       break;
     case 3:
-      tela_localizacao(lat, lon, alt, pre, utc);
+      tela_localizacao(lat, lon, alt, pre, utc, locat);
       break;
     case 4:
       tela_saida(tensao, Ssaida, pacot, Slaten);
@@ -104,9 +104,9 @@ void BDRDisplay::page_client(int page, int statusOUT, int Swifi, int Sntrip, int
   }
 }
 
-void BDRDisplay::page_local(int page, int statusOUT, int Ssaida, int PDvolts, char* Wssid, char* Wpass, char* Nhost, char* Nmtpt, char* Nuser, char* Npass,
-char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char* flow, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial) {
-  display_fixo(2, page, statusOUT);
+void BDRDisplay::page_local(int page, char* statusOUT, int NStatus, int Ssaida, int PDvolts, char* Wssid, char* Wpass, char* Nhost, char* Nmtpt, char* Nuser, char* Npass,
+String Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char* flow, char* tensao, String pacot, String Slaten, char* modelo, char* firmware, String serial) {
+  display_fixo(2, page, String(statusOUT));
   static bool scrollerInit = false;
   if (!scrollerInit) {
     scrollerInitLocal(Wssid, Wpass, Nhost, Nmtpt, Nuser, Npass);
@@ -114,16 +114,16 @@ char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char*
   }
   switch(page) {
     case 0:
-      page_only_local(0, Wusers, Nport, baud, pari, data, stop, flow);
+      page_only_local(0, NStatus, Wusers, Nport, baud, pari, data, stop, flow);
     break;
     case 1:
-      page_only_local(1, Wusers, Nport, baud, pari, data, stop, flow);
+      page_only_local(1, NStatus, Wusers, Nport, baud, pari, data, stop, flow);
     break;
     case 2:
-      page_only_local(2, Wusers, Nport, baud, pari, data, stop, flow);
+      page_only_local(2, NStatus, Wusers, Nport, baud, pari, data, stop, flow);
     break;
     case 3:
-      page_only_local(3, Wusers, Nport, baud, pari, data, stop, flow);
+      page_only_local(3, NStatus, Wusers, Nport, baud, pari, data, stop, flow);
     break;
     case 4:
       tela_saida(tensao, Ssaida, pacot, Slaten);
@@ -140,9 +140,9 @@ char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char*
   }
 }
 
-void BDRDisplay::page_source(int page, int statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, char* Wip, char* Nrede, char* rssi, char* Nlaten,
-  char* uptim, char* tensao, char* pacot, char* Slaten, char* modelo, char* firmware, char* serial) {
-  display_fixo(3, page, statusOUT);
+void BDRDisplay::page_source(int page, char* statusOUT, int Swifi, int Sntrip, int Ssaida, int PDvolts, char* Wrede, const char* Wip, char* Nrede, int rssi, String Nlaten,
+  char* uptim, char* tensao, String pacot, String Slaten, char* modelo, char* firmware, String serial) {
+  display_fixo(3, page, String(statusOUT));
   static bool scrollerInit = false;
   if (!scrollerInit) {
     scrollerInitClientSource(Wrede, Wip, Nrede);
@@ -194,7 +194,7 @@ void BDRDisplay::texto_fixo_inferior(int state) {
   }
 }
 
-void BDRDisplay::page_client_source(int page, int Swifi, int Sntrip, int Ssaida, char* rssi, char* Nlaten, char* uptim) {
+void BDRDisplay::page_client_source(int page, int Swifi, int Sntrip, int Ssaida, int rssi, String Nlaten, char* uptim) {
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
   switch(page) {
@@ -204,32 +204,34 @@ void BDRDisplay::page_client_source(int page, int Swifi, int Sntrip, int Ssaida,
       display.print("STATUS BDR");
       display.setCursor(0, 22);
       display.print("WIFI:");
-        if (Swifi == 0) {
-          display.print("BUSCANDO...");
-        } else if (Swifi == 1) {
-          display.print("CONECTANDO...");
-        } else if (Swifi == 2) {
-          display.print("DESCONECTADO");
-        } else if (Swifi == 3) {
-          display.print("NAO ENCONTRADA");
-        } else if (Swifi == 4) {
-          display.print("SENHA INCORRETA");
-        } else if (Swifi == 5) {
-          display.print("CONECTADO");
-        }
+      if (Swifi == 0) {
+        display.print("CONECTANDO...");
+      } else if (Swifi == 1) {
+        display.print("CONECTADO");
+      } else if (Swifi == 2 || Swifi == 5) {
+        display.print("DESCONECTADO");
+      } else if (Swifi == 3) {
+        display.print("N ENCONTRADA");
+      } else if (Swifi == 4) {
+        display.print("ERR SENHA");
+      }
       display.setCursor(0, 33);
       display.print("NTRIP:");
-        if (Sntrip == 0) {
-          display.print("MTPT INCORRETO");
-        } else if (Sntrip == 1) {
-          display.print("USR/SEN INCORRETA");
-        } else if (Sntrip == 2) {
-          display.print("HOST INVALIDO");
-        } else if (Sntrip == 3) {
-          display.print("CONECTANDO...");
-        } else if (Sntrip == 4 || Sntrip == 5) {
-          display.print("CONECTADO");
-        }
+      if (Sntrip == 0) {
+        display.print("CONECTADO");
+      } else if (Sntrip == 1) {
+        display.print("NAO ENCONTRADA");
+      } else if (Sntrip == 2) {
+        display.print("ERR RESPOSTA");
+      } else if (Sntrip == 3) {
+        display.print("USER/PASS INVAL");
+      } else if (Sntrip == 4) {
+        display.print("SEM RESPOSTA");
+      } else if (Sntrip == 5) {
+        display.print("MTPNT INCORR");
+      } else if (Sntrip == 6) {
+        display.print("CONECTANDO...");
+      }
       display.setCursor(0, 44);
       display.print("SAIDA:");
       if (Ssaida == 0) {
@@ -252,19 +254,16 @@ void BDRDisplay::page_client_source(int page, int Swifi, int Sntrip, int Ssaida,
       display.setCursor(0, 33);
       display.print("STATUS:");
       if (Swifi == 0) {
-          display.print("BUSCANDO...");
-        } else if (Swifi == 1) {
-          display.print("CONECTANDO...");
-        } else if (Swifi == 2) {
-          display.print("DESCONECTADO");
-        } else if (Swifi == 3) {
-          display.print("NAO ENCONTRADA");
-        } else if (Swifi == 4) {
-          display.print("SENHA INCORRETA");
-        } else if (Swifi == 5) {
-          display.print("CONECTADO");
-        }
-      
+        display.print("CONECTANDO...");
+      } else if (Swifi == 1) {
+        display.print("CONECTADO");
+      } else if (Swifi == 2 || Swifi == 5) {
+        display.print("DESCONECTADO");
+      } else if (Swifi == 3) {
+        display.print("N ENCONTRADA");
+      } else if (Swifi == 4) {
+        display.print("ERRO SENHA");
+      } 
       scrollers[1]->scrollLine();
       display.fillRect(0, 44, 18, 11, 0);
       display.setCursor(0, 44);
@@ -275,42 +274,46 @@ void BDRDisplay::page_client_source(int page, int Swifi, int Sntrip, int Ssaida,
       display.print(rssi);
     break;
     case 2:
+      scrollers[2]->scrollLine();
       display.fillRect(0, 11, 128, 11, 0);
+      display.fillRect(74, 22, 54, 22, 0);
       display.fillRect(0, 33, 128, 11, 0);
       display.fillRect(0, 44, 128, 11, 0); 
       display.setCursor(30, 11);
       display.print("NTRIP STATUS");
 
-      scrollers[2]->scrollLine();
       display.fillRect(0, 22, 30, 11, 0);
       display.setCursor(0, 22);
       display.print("REDE:");
 
       display.setCursor(0, 33);
       display.print("STATUS:");
-        if (Sntrip == 0) {
-          display.print("MTPT INCORRETO");
-        } else if (Sntrip == 1) {
-          display.print("USR/SEN INCORRETA");
-        } else if (Sntrip == 2) {
-          display.print("HOST INVALIDO");
-        } else if (Sntrip == 3) {
-          display.print("CONECTANDO...");
-        } else if (Sntrip == 4 || Sntrip == 5) {
-          display.print("CONECTADO");
-        }
-
-      display.setCursor(0, 44);
+      if (Sntrip == 0) {
+        display.print("CONECTADO");
+      } else if (Sntrip == 1) {
+        display.print("NAO ENCONTRADA");
+      } else if (Sntrip == 2) {
+        display.print("ERR RESPOSTA");
+      } else if (Sntrip == 3) {
+        display.print("USER/PASS INVAL");
+      } else if (Sntrip == 4) {
+        display.print("SEM RESPOSTA");
+      } else if (Sntrip == 5) {
+        display.print("MTPNT INCORR");
+      } else if (Sntrip == 6) {
+        display.print("CONECTANDO...");
+      }
+      display.setCursor(74, 22);
       display.print("LATEN:");
       display.print(Nlaten);
-      display.setCursor(63, 44);
+      display.setCursor(0, 44);
       display.print("UPTIM:");
       display.print(uptim);
     break;
   }
 }
 
-void BDRDisplay::page_only_local(int page, char* Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char* flow) {
+void BDRDisplay::page_only_local(int page, int NStatus, String Wusers, char* Nport, char* baud, char* pari, char* data, char* stop, char* flow) {
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
   switch(page) {
@@ -368,6 +371,23 @@ void BDRDisplay::page_only_local(int page, char* Wusers, char* Nport, char* baud
       display.fillRect(0, 33, 30, 11, 0);
       display.setCursor(0, 33);
       display.print("PASS:");
+
+      display.fillRect(0, 44, 128, 11, 0);
+      display.setCursor(0, 44);
+      display.print("STATUS:");
+      if (NStatus == 0) {
+        display.print("DESCONECTADO");
+      } else if (NStatus == 1) {
+        display.print("USR INVAL");
+      } else if (NStatus == 2) {
+        display.print("SENHA INVAL");
+      } else if (NStatus == 3) {
+        display.print("MTPT INVAL");
+      } else if (NStatus == 4) {
+        display.print("N ENCONTRADO");
+      } else if (NStatus == 5) {
+        display.print("CONECTADO");
+      }
     break;
     case 3:
       display.fillRect(0, 10, 128, 45, 0); 
@@ -392,7 +412,7 @@ void BDRDisplay::page_only_local(int page, char* Wusers, char* Nport, char* baud
   }
 }
 
-void BDRDisplay::tela_saida(char* tensao, int Ssaida, char* pacot, char* Slaten) {
+void BDRDisplay::tela_saida(char* tensao, int Ssaida, String pacot, String Slaten) {
   display.fillRect(0, 10, 128, 45, 0); 
   display.setCursor(25, 11);
   display.print("SAIDA STATUS");
@@ -424,7 +444,7 @@ void BDRDisplay::tela_entrar_config() {
   display.print("CONFIGURACAO?");
 }
 
-void BDRDisplay::tela_localizacao(char* lat, char* lon, char* alt, char* pre, char* utc) {
+void BDRDisplay::tela_localizacao(char* lat, char* lon, char* alt, char* pre, char* utc, String locat) {
   display.fillRect(0, 10, 128, 45, 0); 
   display.setCursor(30, 11);
   display.print("LOCALIZACAO");
@@ -438,14 +458,21 @@ void BDRDisplay::tela_localizacao(char* lat, char* lon, char* alt, char* pre, ch
   display.print("ALT:");
   display.print(String(alt).substring(0, 5));
   display.setCursor(65, 33);
-  display.print("PRE");
+  display.print("PRE:");
   display.print(String(pre).substring(0, 5));
   display.setCursor(0, 44);
   display.print("UTC:");
   display.print(utc);
+  display.setCursor(84, 44);
+  display.print("LOC:");
+  if (locat == "N") {
+    display.print("OFF");
+   } else if (locat == "S") {
+    display.print("ON");
+   }
 }
 
-void BDRDisplay::display_fixo(int modo, int page, int statusOUT){
+void BDRDisplay::display_fixo(int modo, int page, String statusOUT){
   display.fillRect(0, 0, 128, 10, 0);
   display.drawLine(0, 8, 128, 8, 1);
   display.setTextColor(SSD1306_WHITE);
@@ -468,7 +495,8 @@ void BDRDisplay::display_fixo(int modo, int page, int statusOUT){
   }
   display.setCursor(74, 0);
   display.print("SAIDA:");
-  switch(statusOUT){
+  display.print(statusOUT);
+  /*switch(statusOUT){
     case 0: display.print("OFF");
     break;
     case 1: display.print("5V");
@@ -483,10 +511,10 @@ void BDRDisplay::display_fixo(int modo, int page, int statusOUT){
     break;
     case 6: display.print("N/A");
     break;
-  }
+  } */
   switch(modo){
     case 0:
-      if(page==2){
+      if(page==1){
         texto_fixo_inferior(1);
       }else{
         texto_fixo_inferior(0);
@@ -547,7 +575,7 @@ void BDRDisplay::tela_info_alimentacao(int PDvolts){
   }
 }
 
-void BDRDisplay::tela_info_bdr(char* modelo, char* firmware, char* serial){
+void BDRDisplay::tela_info_bdr(char* modelo, char* firmware, String serial){
   display.fillRect(0, 10, 128, 45, 0);
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
@@ -566,12 +594,12 @@ void BDRDisplay::tela_info_bdr(char* modelo, char* firmware, char* serial){
   display.print(serial);
 }
 
-void BDRDisplay::display_config(int page, bool conectado, int statusPD, char* modelo, char* firmware, char* serial) {
+void BDRDisplay::display_config(int page, bool conectado, int statusPD, int alimentacao, char* modelo, char* firmware, String serial) {
   static bool state;
   static unsigned long lastBlinkTime1;
   display.fillRect(0, 10, 128, 45, 0);
   display.setTextSize(1);
-  display_fixo(1, page, statusPD);
+  display_fixo(0, page, (String(statusPD) + "V"));
   switch(page){
     case 0:
       if (millis() - lastBlinkTime1 >= 2000){
@@ -609,7 +637,7 @@ void BDRDisplay::display_config(int page, bool conectado, int statusPD, char* mo
       display.print("CONFIGURACAO?");
     break;
     case 2:
-      tela_info_alimentacao(statusPD);
+      tela_info_alimentacao(alimentacao);
     break;
     case 3:
       tela_info_bdr(modelo, firmware, serial);

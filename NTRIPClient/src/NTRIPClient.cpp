@@ -37,7 +37,7 @@ int NTRIPClient::reqRaw(char* host,int &port,char* mntpnt,char* user,char* psw, 
     if(!connect(host,port))return 1;
     String p="GET /";
     String auth="";
-    Serial.println("Request NTRIP");
+    //Serial.println("Request NTRIP");
     
     p = p + mntpnt + String(" HTTP/1.1\r\n"
         "Host: ") + host + String(":") + port + String("\r\nUser-Agent: NTRIP BTX02Client/") + id + String("\r\n"); //String("\r\nUser-Agent: NTRIP X-PAD\r\n");
@@ -51,7 +51,7 @@ int NTRIPClient::reqRaw(char* host,int &port,char* mntpnt,char* user,char* psw, 
     else {
         auth = base64::encode(String(user) + String(":") + psw);
         #ifdef Debug
-        Serial.println(String(user) + String(":") + psw);
+        //Serial.println(String(user) + String(":") + psw);
         #endif
         //Serial.println(String(user) + String(":") + psw);
         p = p + String("Authorization: Basic ");
@@ -67,9 +67,9 @@ int NTRIPClient::reqRaw(char* host,int &port,char* mntpnt,char* user,char* psw, 
         p = p + gga + String("\r\n");
     }
     print(p);
-    Serial.println(p);
+    //Serial.println(p);
     #ifdef Debug
-    Serial.println(p);
+    //Serial.println(p);
     #endif
     unsigned long timeout = millis();
     while (available() == 0) {
@@ -82,12 +82,12 @@ int NTRIPClient::reqRaw(char* host,int &port,char* mntpnt,char* user,char* psw, 
     delay(50);
     
     int tamanho_do_buffer = available();
-    Serial.println(tamanho_do_buffer);
+    //Serial.println(tamanho_do_buffer);
     char buffer[tamanho_do_buffer+1];
     readBytes(buffer,tamanho_do_buffer);
-    Serial.print("buffer= ");
-    Serial.print((char*)buffer);
-    Serial.print(" /fim");
+    //Serial.print("buffer= ");
+    //Serial.print((char*)buffer);
+    //Serial.print(" /fim");
     if(strncmp((char*)buffer,"HTTP/1.1 404",12)==0||strncmp((char*)buffer,"404 Not found",13)==0){
         //Serial.println("autentificação incoreta!");
         return 6;

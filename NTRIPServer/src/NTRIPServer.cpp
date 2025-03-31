@@ -1,5 +1,6 @@
 #include "NTRIPServer.h"
 #include "base64.hpp"
+#include "HardwareSerial.h"
 
 void NTRIPServer::NTRIPLocalSetup(const char* Network, const char* Password,
     IPAddress ip, IPAddress gateway, IPAddress subnet) {
@@ -43,21 +44,34 @@ int NTRIPServer::analize_data(String data, String user, String password, String 
     int posicao_bara = data.indexOf("/");
     int posicao_basic = data.indexOf(": Basic") + 8;
     if (posicao_http < 0){
+      Serial.println("ERRO1");
       return 0; //ERRO1 
     }
     String versao_http = data.substring(posicao_http, posicao_rn);
     if(versao_http == "HTTP/1.0"){
+      Serial.println("ERRO2");
       state |= 1 << 1;
+    } else {
+      state |= 0 << 1;
     }
     if(versao_http == "HTTP/1.1"){
+      Serial.println("ERRO3");
       state |= 1 << 2;
+    } else {
+      state |= 0 << 2;
     }
     String cliente_mountpoint = data.substring(posicao_bara,posicao_http-1);
-    if(cliente_mountpoint == (String("/") + mountpoint)){
+    if(cliente_mountpoint != (String("/") + mountpoint)){
+      Serial.println("ERRO4");
       state |= 1 << 3; 
+    } else if (cliente_mountpoint == (String("/") + mountpoint)) {
+      state |= 0 << 3;
     }
     if(cliente_mountpoint == "/SOURCETABLE.TXT " || cliente_mountpoint == "/"){
+      Serial.println("ERRO5");
       state |= 1 << 4;
+    } else {
+      state |= 0 << 4;
     }
     String usuario_encoded = data.substring(posicao_basic);
     usuario_encoded.toCharArray(base64,50);
@@ -65,20 +79,27 @@ int NTRIPServer::analize_data(String data, String user, String password, String 
     string[string_length] = '\0';
     String usuario_decoded = String((char *)string);
     int separador = usuario_decoded.indexOf(":");
-    if(usuario_decoded.substring(0,separador) == user){
+    if(usuario_decoded.substring(0,separador) != user){
+      Serial.println("ERRO6");
       state |= 1 << 5;
+    } else if (usuario_decoded.substring(0,separador) == user) {
+      state |= 0 << 5;
     }
-    if(usuario_decoded.substring(separador+1) == password){
+    if(usuario_decoded.substring(separador+1) != password){
+      Serial.println("ERRO7");
       state |= 1 << 6;
+    } else if (usuario_decoded.substring(separador+1) == password) {
+      state |= 0 << 6;
     }
     return state;
 }
 
-
-int NTRIPServer::NTRIPLocal(WiFiClient& client, Stream& serialPort){
+/*
+int NTRIPServer::NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, char* Mountpoint){
   char client_data[1024];
   while(client.connected()){
     int counter = 0; 
+    Serial.println("while1");
     while (client.available()>0){  
       client_data[counter] = client.read();
       counter++;
@@ -89,7 +110,7 @@ int NTRIPServer::NTRIPLocal(WiFiClient& client, Stream& serialPort){
         memset(client_data,' ',sizeof(client_data)*sizeof(char));
         if(client_data_s.indexOf("GET")==0){
           
-          int client_status = analize_data(client_data_s,"user","passw","ntripteste");
+          int client_status = analize_data(client_data_s,User,Pass,Mountpoint);
           if(client_status!=0){
             if(client_status &(1 << 4)){
               //solicitando mntp
@@ -108,20 +129,23 @@ int NTRIPServer::NTRIPLocal(WiFiClient& client, Stream& serialPort){
                 //ntrip 2.0
                 client.println("HTTP/1.1 200 OK");
               }
+              Serial.println("tudo ok!");
               while(client.connected()){
                 if(serialPort.available()) {
                   char ch_ap[1024];
                   int readcount_ap = 0;
-                  serialPort.println(serialPort.available());
+                  Serial.println(serialPort.available());
                   while (serialPort.available()) {
                     ch_ap[readcount_ap] = serialPort.read();
                     readcount_ap++;
                     if (readcount_ap > 511)break;
+                    Serial.println("while4");
                   }//buffering
                   
                   client.write((uint8_t*)ch_ap, readcount_ap);
                   //Serial.println(readcount_ap);
                 } 
+                Serial.println("while3");
               }
               return 1;
             }else{
@@ -156,6 +180,7 @@ int NTRIPServer::NTRIPLocal(WiFiClient& client, Stream& serialPort){
           return 0;
         }
       }
+      Serial.println("while2");
     }
   } 
-}
+} */

@@ -69,5 +69,6 @@ void setup() {
 }
 
 void loop() {
-  ntripS.NTRIPSourceStart(Serial2, ntrip_s, 2101, "HugenPLUS", "H32851112", "192.168.15.16", "juca", 2, "jucas", "jucapass", "");
+  ntripS.NTRIPSourceStart(Serial2, ntrip_s, 2101, "HugenPLUS", "H32851112", "192.168.15.21", "juca", 2, "jucas", "jucapass", "");
+  Serial.println(ntripS.getSourceError());
 }

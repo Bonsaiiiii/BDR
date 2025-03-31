@@ -9,13 +9,12 @@ public:
                IPAddress ip = IPAddress(192, 168, 0, 1), 
                IPAddress gateway = IPAddress(192, 168, 0, 1), 
                IPAddress subnet = IPAddress(255, 255, 255, 0));
-    int NTRIPLocal(WiFiClient& client, Stream& serialPort);
+    /*int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, char* Mountpoint); */
     void handle();
-
-private:
     String scrtbl(const char* mountpoint, String ip, uint16_t port);
     int analize_data(String data, String user, String password, String mountpoint);
 
+private:
     char client_data[1024];
     char ch_ap[1024];
     unsigned long int readcount_ap;
