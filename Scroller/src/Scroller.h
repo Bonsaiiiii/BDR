@@ -9,15 +9,16 @@ class Scroller {
     Adafruit_SSD1306& display;
     unsigned long lastUpdate = 0;
     bool scrollReverse = false;
-    int initialPos, endPos, heightPos;
+    int scrollType, scrollSpeed, initialPos, endPos, heightPos;
     const char* variableText;
     int scrollVal;
 
   public:  
-    Scroller(int initialPos, int endPos, int heightPos, const char* variableText, Adafruit_SSD1306& display);
+    Scroller(int initialPos, int endPos, int heightPos, const char* variableText, Adafruit_SSD1306& display, int scrollType = 1, int scrollSpeed = 100);
     void scrollLine();
 
   private:
+    void fullScrollLine(int textWidth, int reverse);
     void handleLongText(int displayArea, int textWidth);
     void handleShortText();
 };
