@@ -348,6 +348,68 @@ void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info) {
   //Serial.println(IPAddress(info.got_ip.ip_info.ip.addr));
 }
 
+void sanitizeURL(const char* url, char* cleanHost, size_t bufferSize) {
+  const char* domain = url;
+
+  // Skip "http://" or "https://"
+  if (strncmp(domain, "http://", 7) == 0) {
+    domain += 7;
+  } else if (strncmp(domain, "https://", 8) == 0) {
+    domain += 8;
+  }
+
+  // Find the end of the domain (stop at '/', '?', ':', etc.)
+  const char* end = strpbrk(domain, "/?:"); 
+  if (!end) end = domain + strlen(domain); // No delimiter found
+
+  // Calculate length to copy
+  size_t len = end - domain;
+
+  // Ensure it fits in the buffer
+  if (len >= bufferSize) len = bufferSize - 1;
+
+  // Copy sanitized domain to `cleanHost`
+  strncpy(cleanHost, domain, len);
+  cleanHost[len] = '\0'; // Null-terminate
+}
+
+static char ipBuffer[16] = {0}; // "xxx.xxx.xxx.xxx\0"
+
+char* DNSTranslation(const char* DNSInput) {
+  static bool translation = true; // Only resolve once
+
+  if (translation) {
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("\nWiFi failed!");
+      return nullptr; // Indicate failure
+    }
+
+    Serial.println("\nWiFi connected!");
+
+    char cleanHost[40];
+    sanitizeURL(DNSInput, cleanHost, sizeof(cleanHost));
+
+    IPAddress resolvedIP;
+    if (WiFi.hostByName(cleanHost, resolvedIP)) {
+      // Write IP directly to static buffer (no String)
+      snprintf(ipBuffer, sizeof(ipBuffer), "%d.%d.%d.%d",
+               resolvedIP[0], resolvedIP[1], resolvedIP[2], resolvedIP[3]);
+
+      Serial.print("Resolved IP: ");
+      Serial.println(ipBuffer);
+
+      translation = false; // Prevent re-resolution
+      return ipBuffer; // Return pointer to static buffer
+    } else {
+      Serial.println("Resolution failed!");
+      return nullptr;
+    }
+  }
+
+  // Return cached IP on subsequent calls
+  return ipBuffer;
+}
+
 void setup() {
   if (!SPIFFS.begin(true)) {
     //handleSpiFFSError();
@@ -934,6 +996,9 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
     i++;
     delay(100);
   }
+  if (WiFi.status() == WL_CONNECTED && DNSTranslation(NTPHost) != NULL) {
+    NTPHost = DNSTranslation(NTPHost);
+  }
   int iPORT = strtol(Port, NULL, 0);
   Serial.println("Requesting SourceTable.");
   //switch(client.reqSrcTbl(cHOST,iPORT,FMAC)){
@@ -966,18 +1031,15 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
   }
   Serial.println("Requesting MountPoint's Raw data");     
   if(SendLocation=="S"){
-    Serial.println("SENDLOCATION ON");
     if(Latitude!=""&&Longitude!=""&&Altitude!=""&&Tempoutc!=""){
       String nmeaGGA = CriaGGA(Latitude,Longitude,Altitude,Tempoutc);
       switch(ntripclient.reqRaw(NTPHost,iPORT,MTPT,NTPHost,NTPPassword,nmeaGGA,SendLocation,MACAdr)){
         case 1: Serial.print("Não foi possivel conectar ao ");Serial.print(NTPHost);Serial.print(":");Serial.println(iPORT);
                 ntripclient.stop();
-                //ESP.restart();
                 errorClient = 1;
         break;
         case 2: Serial.println("Não ouve resposta do servidor ou resposta nao compreendida");
                 ntripclient.stop();
-                //ESP.restart();
                 errorClient = 2;
         break;
         case 3: Serial.print("Usuario ou senha invalidos: ");Serial.print(NTPUser);Serial.print(":");Serial.println(NTPPassword);
@@ -1002,23 +1064,18 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
       }
     }
   }else if (SendLocation=="N"){
-    Serial.println("SENDLOCATION OFF");
     switch(ntripclient.reqRaw(NTPHost,iPORT,MTPT,NTPUser,NTPPassword,"","",MACAdr)){
       case 1: Serial.print("Não foi possivel conectar ao ");Serial.print(NTPHost);Serial.print(":");Serial.println(iPORT);
               ntripclient.stop();
-              //nao conecta ao host/port
-              //ESP.restart();
               errorClient = 1;
       break;
       case 2: Serial.println("Não ouve resposta do servidor ou resposta nao compreendida");
               ntripclient.stop();
-              //ESP.restart();
               errorClient = 2;
       break;
       case 3: Serial.print("Usuario ou senha invalidos: ");Serial.print(NTPHost);Serial.print(":");Serial.println(NTPPassword);
               Serial.println("unable to connect with ntrip caster");
               ntripclient.stop();
-              //ESP.restart();
               errorClient = 3;
       break;
       case 4: Serial.print("tudo ok!");
@@ -1026,20 +1083,18 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
       break;
       case 5: Serial.println("Servidor não responde 3");
               ntripclient.stop();
-              //ESP.restart();
               errorClient = 4;
       break;
       case 6: Serial.println("Mount Point incorreto");
               ntripclient.stop();
-              //ESP.restart();
               errorClient = 5;
       break;
       }
     }
     if (i >= 50){
-    setupDone = true;
-    errorClient = 4;
+      errorClient = 4;
     }
+    setupDone = true;
   }
   if (errorClient == 0) {
     String GGA = CriaGGA(Latitude,Longitude,Altitude,Tempoutc);
@@ -1060,31 +1115,30 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
         timer = 0;
         timeCount();
       } else {
-      unsigned long currentMillisTimer = millis();
-      if (currentMillisTimer - previousMillis >= 1000) {
-        previousMillis = currentMillisTimer;
-        if (timer < 99) {
-          timer++;
-          if (timer > 3) {
-            readcount_disp = 0;
+        unsigned long currentMillisTimer = millis();
+        if (currentMillisTimer - previousMillis >= 1000) {
+          previousMillis = currentMillisTimer;
+          if (timer < 99) {
+            timer++;
+            if (timer > 3) {
+              readcount_disp = 0;
+              packageDisp = 0;
+            }
+            if (timer > 20) {
+              ntripclient.sendgga(enviaGGA);
+              previousMillis = currentMillisTimer;
+            }
+          } else {
+            setupDone = false;
+            snprintf(timeCountVal, sizeof(timeCountVal), "-- --:--");
             packageDisp = 0;
+            timer = 0;
+            errorClient = 4;
+            return false;
           }
-          if (timer > 20) {
-            ntripclient.sendgga(enviaGGA);
-            previousMillis = currentMillisTimer;
-          }
-        } else {
-          setupDone = false;
-          snprintf(timeCountVal, sizeof(timeCountVal), "-- --:--");
-          packageDisp = 0;
-          timer = 0;
-          errorClient = 4;
-          return false;
         }
       }
     }
-  }
-    setupDone = true;
   }
   //milli_inicio = millis();
   return true;
@@ -1130,6 +1184,9 @@ int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char*
   static bool substationExecuted = false;
   if (!substationExecuted) {
     ntripS.NTRIPSourceSetup(Network, Password);
+    if (WiFi.status() == WL_CONNECTED && DNSTranslation(Host) != NULL) {
+      Host = DNSTranslation(Host);
+    }
     //Serial.println("Subscribing MountPoint is OK");
     sourceError = ntripS.subStation(client, HTTPPort, Host, MountPoint, rev, NTPUser, NTPPass, srcSTR);
     if (sourceError == 0 || sourceError == 2) {
