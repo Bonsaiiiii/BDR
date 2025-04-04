@@ -1406,7 +1406,27 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
 }
 
 void local() {
-  //Serial.println("local");
+  //Serial.println("loca  l");
+  String configChr = "SERIAL_" + datbitL + "N" + bitsParaL;
+  uint32_t config;
+  if (configChr == "SERIAL_5N1") {
+    config = SERIAL_5N1;
+  } else if (configChr == "SERIAL_6N1") {
+    config = SERIAL_6N1;
+  } else if (configChr == "SERIAL_7N1") {
+    config = SERIAL_7N1;
+  } else if (configChr == "SERIAL_8N1") {
+    config = SERIAL_8N1;
+  } else if (configChr == "SERIAL_5N2") {
+    config = SERIAL_5N2;
+  } else if (configChr == "SERIAL_6N2") {
+    config = SERIAL_6N2;
+  } else if (configChr == "SERIAL_7N2") {
+    config = SERIAL_7N2;
+  } else if (configChr == "SERIAL_8N2") {
+    config = SERIAL_8N2;
+  }
+  Serial1.begin(baudrateL.toInt(), config, TX, RX);
   ntripL.NTRIPLocalSetup(cssidL, NULL);
   wifiServer.begin();
   while(true) {
@@ -1470,6 +1490,30 @@ void LedLocal(int err) {
 }
 
 void cliente() {
+  String configChr = "SERIAL_" + datbitC + "N" + bitsParaC;
+  uint32_t config;
+  if (configChr == "SERIAL_5N1") {
+    config = SERIAL_5N1;
+  } else if (configChr == "SERIAL_6N1") {
+    config = SERIAL_6N1;
+  } else if (configChr == "SERIAL_7N1") {
+    config = SERIAL_7N1;
+  } else if (configChr == "SERIAL_8N1") {
+    config = SERIAL_8N1;
+  } else if (configChr == "SERIAL_5N2") {
+    config = SERIAL_5N2;
+  } else if (configChr == "SERIAL_6N2") {
+    config = SERIAL_6N2;
+  } else if (configChr == "SERIAL_7N2") {
+    config = SERIAL_7N2;
+  } else if (configChr == "SERIAL_8N2") {
+    config = SERIAL_8N2;
+  }
+  Serial1.begin(baudrateC.toInt(), config, TX, RX);
+  //Serial.print("SERIAL CONFIG: ");
+  //Serial.print(baudrateC.toInt());
+  //Serial.print(", ");
+  //Serial.print(configChr);
   while(true) {
     LedClientSource(errorClient);
     if (digitalRead(PAGE) == HIGH) {
@@ -1539,6 +1583,26 @@ void LedClientSource(int err) {
 }
 
 void source() {
+  String configChr = "SERIAL_" + datbitS + "N" + bitsParaS;
+  uint32_t config;
+  if (configChr == "SERIAL_5N1") {
+    config = SERIAL_5N1;
+  } else if (configChr == "SERIAL_6N1") {
+    config = SERIAL_6N1;
+  } else if (configChr == "SERIAL_7N1") {
+    config = SERIAL_7N1;
+  } else if (configChr == "SERIAL_8N1") {
+    config = SERIAL_8N1;
+  } else if (configChr == "SERIAL_5N2") {
+    config = SERIAL_5N2;
+  } else if (configChr == "SERIAL_6N2") {
+    config = SERIAL_6N2;
+  } else if (configChr == "SERIAL_7N2") {
+    config = SERIAL_7N2;
+  } else if (configChr == "SERIAL_8N2") {
+    config = SERIAL_8N2;
+  }
+  Serial1.begin(baudrateS.toInt(), config, TX, RX);
   while(true) {
     LedClientSource(sourceError);
     if (digitalRead(PAGE) == HIGH) {
