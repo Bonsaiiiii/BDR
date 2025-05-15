@@ -82,7 +82,7 @@ int NTRIPSource::subStation(WiFiClient& client, int port, char* host, char* mntp
     return false;
   } */
   //return true;
-} // AAAAAAAAAAAAAAAAAAAAAA
+} // BBBBBBBBBBBBB
 
 
 //int sourceError;

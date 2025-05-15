@@ -14,6 +14,7 @@ void loop() {
 #include "HardwareSerial.h"
 #include "NTRIPServer.h"
 
+
 WiFiServer ntripServer(2101);
 NTRIPServer ntrip;
 //WiFiClient client = ntripServer.available();
@@ -86,31 +87,31 @@ void NTRIPLocalSetup(char* Network, char* Password) {
   Serial.println("setup concluido");
 } */
 
-/*
-int NTRIPLocal(WiFiClient& client, Stream& serialPort){
+int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, char* Mountpoint){
   char client_data[1024];
-  while(client.connected()){
-    int counter = 0; 
+  if(client.connected()){
+    static int counter = 0; 
     while (client.available()>0){  
       client_data[counter] = client.read();
       counter++;
       if(client.available()==0){
         String client_data_s = String(client_data);
         Serial.println(client_data_s.indexOf("GET"));
-        Serial.println(client_data);
+        Serial.println(client_data_s);
         memset(client_data,' ',sizeof(client_data)*sizeof(char));
         if(client_data_s.indexOf("GET")==0){
           
-          int client_status = analize_data(client_data_s,"user","passw","ntripteste");
+          int client_status = ntrip.analize_data(client_data_s,User,Pass,Mountpoint);
           if(client_status!=0){
             if(client_status &(1 << 4)){
               //solicitando mntp
               client.println("SOURCETABLE 200 OK");
-              client.println(scrtbl("ntripteste",WiFi.softAPIP().toString(),2101));
+              client.println(ntrip.scrtbl("ntripteste",WiFi.softAPIP().toString(),2101));
               client.stop();
               return 6;
             }
-            if(client_status &(1 << 3)&&client_status &(1 << 5)&&client_status &(1<<6)){
+            Serial.println(client_status); 
+            if(client_status &(1 << 1)||client_status &(1 << 2)){
               // tudo ok!
               if(client_status &(1 << 1)){
                 //ntrip 1.0
@@ -120,41 +121,51 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort){
                 //ntrip 2.0
                 client.println("HTTP/1.1 200 OK");
               }
-              while(client.connected()){
-                if(serialPort.available()) {
-                  char ch_ap[1024];
-                  int readcount_ap = 0;
-                  serialPort.println(serialPort.available());
-                  while (serialPort.available()) {
-                    ch_ap[readcount_ap] = serialPort.read();
-                    readcount_ap++;
-                    if (readcount_ap > 511)break;
-                  }//buffering
-                  
-                  client.write((uint8_t*)ch_ap, readcount_ap);
-                  //Serial.println(readcount_ap);
-                } 
-              }
-              return 1;
-            }else{
-              if(client_status &(0 << 5)){
+              if(client_status &(1 << 5)){
                 client.println("HTTP/1.1 401");
                 client.stop();
                 return 2;
                 //user incorreto
               }
-              if(client_status &(0 << 6)){
+              if(client_status &(1 << 6)){
                 client.println("HTTP/1.1 401");
                 client.stop();
                 return 3;
                 //pass incorreto
               }
-              if(client_status &(0 << 3)){
+              if(client_status &(1 << 3)){
                 client.println("HTTP/1.1 404");
                 client.stop();
                 return 4;
                 //mntp incorreto   
-              } 
+              }
+              Serial.println("tudo ok!");
+              while(client.connected()){
+                if(serialPort.available()) {  
+                  char ch_ap[1024];
+                  int readcount_ap = 0;
+                  Serial.println(serialPort.available());
+                  while (serialPort.available()) {
+                    ch_ap[readcount_ap] = serialPort.read();
+                    readcount_ap++;
+                    if (readcount_ap > 511)break;
+                    Serial.println("while4");
+                  }//buffering
+                  
+                  client.write((uint8_t*)ch_ap, readcount_ap);
+                  Serial.println(readcount_ap);
+                }
+                if (client.available()!=0) {
+                  break;
+                }
+                //Serial.println(client.available());
+                Serial.print("client Connected: ");
+                Serial.println(client.connected());
+                Serial.print("client Available: ");
+                Serial.println(client.available());
+                Serial.println("while3");
+              }
+              return 1;
             }
           }else{
             //trata erro!!! nao http
@@ -168,8 +179,104 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort){
           return 0;
         }
       }
+      Serial.println("while2");
     }
+  }
+}
+
+/*int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, char* Mountpoint){
+  static int counter = 0; 
+  while (client.available()>0){ 
+    char client_data[1024]; 
+    client_data[counter] = client.read();
+    counter++;
+    if(client.available()==0){
+      String client_data_s = String(client_data);
+      Serial.println(client_data_s.indexOf("GET"));
+      Serial.println(client_data_s);
+      memset(client_data,' ',sizeof(client_data)*sizeof(char));
+      if(client_data_s.indexOf("GET")==0){
+        
+        int client_status = ntrip.analize_data(client_data_s,User,Pass,Mountpoint);
+        if(client_status!=0){
+          if(client_status &(1 << 4)){
+            //solicitando mntp
+            client.println("SOURCETABLE 200 OK");
+            client.println(ntrip.scrtbl("ntripteste",WiFi.softAPIP().toString(),2101));
+            client.stop();
+            return 6;
+          }
+          Serial.println(client_status); 
+          if(client_status &(1 << 1)||client_status &(1 << 2)){
+            // tudo ok!
+            if(client_status &(1 << 1)){
+              //ntrip 1.0
+              client.println("ICY 200 OK");
+            }
+            if(client_status &(1 << 2)){
+              //ntrip 2.0
+              client.println("HTTP/1.1 200 OK");
+            }
+            if(client_status &(1 << 5)){
+              client.println("HTTP/1.1 401");
+              client.stop();
+              return 2;
+              //user incorreto
+            }
+            if(client_status &(1 << 6)){
+              client.println("HTTP/1.1 401");
+              client.stop();
+              return 3;
+              //pass incorreto
+            }
+            if(client_status &(1 << 3)){
+              client.println("HTTP/1.1 404");
+              client.stop();
+              return 4;
+              //mntp incorreto   
+            }
+            Serial.println("tudo ok!");
+          }
+        }else{
+          //trata erro!!! nao http
+          client.println("HTTP/1.1 400");
+          client.stop();
+          return 5;
+        }
+      }else{
+        //client.println("HTTP/1.1 502");
+        client.stop();
+        return 0;
+      }
+    }
+    Serial.println("while2");
+  }
+  while(client.connected()){
+    if(serialPort.available()) {  
+      char ch_ap[1024];
+      int readcount_ap = 0;
+      Serial.println(serialPort.available());
+      while (serialPort.available()) {
+        ch_ap[readcount_ap] = serialPort.read();
+        readcount_ap++;
+        if (readcount_ap > 511)break;
+        Serial.println("while4");
+      }//buffering
+      
+      client.write((uint8_t*)ch_ap, readcount_ap);
+      Serial.println(readcount_ap);
+    }
+    if (client.available()!=0) {
+      break;
+    }
+    //Serial.println(client.available());
+    Serial.print("client Connected: ");
+    Serial.println(client.connected());
+    Serial.print("client Available: ");
+    Serial.println(client.available());
+    Serial.println("while3");
   } 
+  return 1;
 } */
 
 void setup() {
@@ -188,11 +295,47 @@ void setup() {
   Serial.begin(115200);
   ntrip.NTRIPLocalSetup("testentrip", NULL);
   ntripServer.begin();
+  Serial1.println("AAAAAAAA");
 }
 
 void loop() {
+  millisfunc();
   WiFiClient client = ntripServer.available();
   if(client){
-    ntrip.NTRIPLocal(client, Serial, "user", "passw", "ntripteste");
+    NTRIPLocal(client, Serial, "user", "passw", "ntripteste");
+  }
+  /*if (client.available()>0) {
+    if(Serial.available()) {  
+      char ch_ap[1024];
+      int readcount_ap = 0;
+      Serial.println(Serial.available());
+      while (Serial.available()) {
+        ch_ap[readcount_ap] = Serial.read();
+        readcount_ap++;
+        if (readcount_ap > 511)break;
+        Serial.println("while4");
+      }//buffering
+      
+      client.write((uint8_t*)ch_ap, readcount_ap);
+      Serial.println(readcount_ap);
+    }
+    //if (client.available()!=0) {
+    //  setup = 0;
+    //}
+    //Serial.println(client.available());
+    Serial.print("client Connected: ");
+    Serial.println(client.connected());
+    Serial.print("client Available: ");
+    Serial.println(client.available());
+    Serial.println("while3");
+  } */
+}
+
+void millisfunc() {
+  static int lastmillis = 0;
+  int millisatual = millis();
+  if (millisatual - lastmillis > 1000) {
+    Serial.println("while out");
+    lastmillis = millisatual;
   }
 }
