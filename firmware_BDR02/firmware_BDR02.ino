@@ -1072,9 +1072,11 @@ String CriaGGA(String lati, String logi, String alti, String tutc){
 }
 
 unsigned long previousMillis = 0;
+unsigned long previousMillisPisca = 0;
 int errorClient = 6; 
 unsigned int readcount;
 bool setupDone = false;
+int package = 0;
 int cliente(const char* Network, const char* Password, char* Port, char* NTPHost, char* NTPUser, char* NTPPassword, const char* MACAdr, char* Latitude, char* Longitude, char* Altitude, const char* Tempoutc, String SendLocation, char* MTPT){
   if (setupDone == false) {
   WiFi.mode(WIFI_STA);
@@ -1087,15 +1089,11 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
   }
   if (WiFi.status() == WL_CONNECTED && DNSTranslation(NTPHost) != NULL) {
     NTPHost = DNSTranslation(NTPHost);
-  }
 
-  configTime(0, 0, "pool.ntp.org");
-  Serial.println("Esperando sincronização de horário...");
+    configTime(0, 0, "pool.ntp.org");
+    Serial.println("Esperando sincronização de horário...");
 
-  
-  while (!getLocalTime(&timeinfo)) {
-    Serial.println("Falha ao obter o tempo");
-    delay(1000);
+    getLocalTime(&timeinfo);
   }
 
   int iPORT = strtol(Port, NULL, 0);
@@ -1230,6 +1228,7 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
         char ch0[5000];
         readcount = ntripclient.readBytes(ch0, ntripclient.available());
         packageDisp = readcount;
+        package = readcount;
         //Serial.println(readcount);
         readcount = 0;
         previousMillis = currentMillis;
@@ -1241,9 +1240,9 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
           previousMillis = currentMillisTimer;
           if (timer < 99) {
             timer++;
-            if (timer > 3) {
+            if (timer > 5) {
               readcount_disp = 0;
-              packageDisp = 0;
+              package = 0;
             }
             if (timer > 20) {
               ntripclient.sendgga(enviaGGA);
@@ -1252,11 +1251,15 @@ int cliente(const char* Network, const char* Password, char* Port, char* NTPHost
           } else {
             setupDone = false;
             snprintf(timeCountVal, sizeof(timeCountVal), "-- --:--");
-            packageDisp = 0;
+            package = 0;
             timer = 0;
             errorClient = 4;
             return false;
           }
+        }
+        if (currentMillisTimer - previousMillisPisca >= 50) {
+          previousMillisPisca = currentMillisTimer;
+          packageDisp = 0;
         }
       }
     }
@@ -1338,6 +1341,7 @@ int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char*
       }//buffering
       //Serial.print("readcount: ");Serial.println(readcount);
       packageDisp = readcount;
+      package = readcount;
       client.write((uint8_t*)ch, readcount);
       //dataPass = readcount;
       readcount = 0;
@@ -1350,13 +1354,17 @@ int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char*
       previousMillis = currentMillisTimer;
       if (timer < 99) {
         timer++;
-        if (timer > 3) {
-          packageDisp = 0;
+        if (timer > 5) {
+          package = 0;
         }
       }
       if (timer > 20) {
         snprintf(timeCountVal, sizeof(timeCountVal), "-- --:--");
       }
+    }
+    if (currentMillisTimer - previousMillisPisca >= 50) {
+      previousMillisPisca = currentMillisTimer;
+      packageDisp = 0;
     }
   } else {
     client.stop();
@@ -1402,7 +1410,7 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
             if(client_status &(1 << 4)){
               //solicitando mntp
               client.println("SOURCETABLE 200 OK");
-              client.println(ntripL.scrtbl("ntripteste",WiFi.softAPIP().toString(),2101));
+              client.println(ntripL.scrtbl(Mountpoint,WiFi.softAPIP().toString(),2101));
               client.stop();
               localError = 0;
               return 6;
@@ -1465,7 +1473,7 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
                 LedLocal(localError);
                 displaybdr.page_local(currentPage, csaidaTenL, localError, portConnected, test_pd(), cssidL, csenwiL, chostNtpL, cmtpntL, cuserL, csenL,
                 String(WiFi.softAPgetStationNum()), cportNtpL, cbaudrateL, cparidadeL, cdatbitL, cbitsParaL, ccontrFluxL, csaidaTenL,
-                String(packageDisp), (String(timer) + "S"), "BDR02", "V1.0", String(ESP.getEfuseMac()));
+                String(package), (String(timer) + "S"), "BDR02", "V1.0", String(ESP.getEfuseMac()));
                 displaybdr.display.display();
                 if(serialPort.available()) {  
                   previousMillis = millis();
@@ -1483,6 +1491,7 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
                   client.write((uint8_t*)ch_ap, readcount_ap);
                   Serial.println(readcount_ap);
                   packageDisp = readcount_ap;
+                  package = readcount_ap;
                 }
                  else {
                   unsigned long currentMillisLocal = millis();
@@ -1490,14 +1499,18 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
                     previousMillisLocal = currentMillisLocal;
                     if (timer < 99) {
                       timer++;
-                      if (timer > 3) {
-                        packageDisp = 0;
+                      if (timer > 5) {
+                        package = 0;
                       }
                     } else {
                       timer = 0;
                       localError = 0;
                       return 1;
                     }
+                  }
+                  if (currentMillisLocal - previousMillisPisca >= 50) {
+                    previousMillisPisca = currentMillisLocal;
+                    packageDisp = 0;
                   }
                 }
                 if (client.available()!=0) {
@@ -1526,7 +1539,7 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
       }
       //Serial.println("while2");
     }
-  } 
+  }
 }
 
 void local() {
@@ -1551,7 +1564,7 @@ void local() {
     config = SERIAL_8N2;
   }
   Serial1.begin(baudrateL.toInt(), config, TX, RX);
-  ntripL.NTRIPLocalSetup(cssidL, NULL);
+  ntripL.NTRIPLocalSetup(cssidL, csenwiL);
   wifiServer.begin();
   while(true) {
     LedLocal(localError);
@@ -1582,7 +1595,7 @@ void local() {
     displaybdr.display.display();
     WiFiClient client = wifiServer.available();
     if(client){
-      NTRIPLocal(client, Serial1, cuserL, csenL, cssidL);
+      NTRIPLocal(client, Serial1, cuserL, csenL, cmtpntL);
     }
   }
 }
@@ -1660,7 +1673,7 @@ void cliente() {
       portConnected = 0;
     }
     displaybdr.page_client(currentPage, csaidaTenC, Swifi, errorClient, portConnected, test_pd(), cssidC, (WiFi.localIP().toString()).c_str(), chostNtpC,
-    WiFi.RSSI(), (String(timer) + "S"), timeCountVal, sendLatLong, clat, clon, calt, cpre, cutc, csaidaTenC, String(packageDisp), (String(timer) + "S"),
+    WiFi.RSSI(), (String(timer) + "S"), timeCountVal, sendLatLong, clat, clon, calt, cpre, cutc, csaidaTenC, String(package), (String(timer) + "S"),
     "BDR02", "V1.0", String(ESP.getEfuseMac()));
     displaybdr.display.display();
     //cliente(cssidC, csenwiC, "2101", "200.135.184.95", "agrimensura", "ifscntrip", "BTX-0553", "17.0000", "48.0000" , "18.000", "00:00:00", "N", "IFSC0");
@@ -1749,7 +1762,7 @@ void source() {
       portConnected = 0;
     }
     displaybdr.page_source(currentPage, csaidaTenS, Swifi, sourceError, portConnected, test_pd(), cssidS, (WiFi.localIP().toString()).c_str(),
-    chostNtpS, WiFi.RSSI(), (String(timer) + "S"), timeCountVal, csaidaTenS, String(packageDisp), (String(timer) + "S"), "BDR02", "V1.0", String(ESP.getEfuseMac()));
+    chostNtpS, WiFi.RSSI(), (String(timer) + "S"), timeCountVal, csaidaTenS, String(package), (String(timer) + "S"), "BDR02", "V1.0", String(ESP.getEfuseMac()));
     displaybdr.display.display();
     //NTRIPSourceStart(Serial1, client, 2101, "HugenPLUS", "H32851112", "192.168.15.16", "juca", sendRev2, "jucas", "jucapass", "");
     NTRIPSourceStart(Serial1, client, portNtpS.toInt(), cssidS, csenwiS, chostNtpS, cmtpntS, sendRev2, cuserS, csenS, "");
