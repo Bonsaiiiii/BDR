@@ -136,6 +136,8 @@ char timeCountVal[30] = "-- --:--";
 int timer = 0;
 int packageDisp = 0;
 struct tm timeinfo;
+WiFiServer forwardServer(2102);
+WiFiClient forwardClient;
 
 void ext_com(bool state) {
   switch(state){
@@ -438,7 +440,7 @@ void setup() {
   displaybdr.initDisplay();
 
   WiFi.onEvent(WiFiEvent);
-  WiFi.onEvent(WiFiGotIP, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
+  WiFi.onEvent(WiFiGotIP, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);  
   WiFiEventId_t eventID = WiFi.onEvent(
     [](WiFiEvent_t event, WiFiEventInfo_t info) {
       //Serial.print("WiFi lost connection. Reason: ");
@@ -742,7 +744,6 @@ void usbpd(int volt){
 int test_pd(){
   static int volt;
   static int state = 1;
-  usbpd(5);
   volt = 5;
   //Serial.println(volt);
   usbpd(9);
@@ -777,44 +778,62 @@ int test_pd(){
   }else if(digitalRead(PDPG)==HIGH){
     state |= 0 << 4;
   }
-  if (Conf == "1" && (voltConf.toInt() > volt)) {
-    digitalWrite(POUT,LOW);
-    //Serial.print("POUT Low Conf: ");
-    //Serial.print(voltConf.toInt());
-    //Serial.print(" ");
-    //Serial.print(volt);
+  usbpd(5);
+
+  if (voltConf.toInt() < volt) {
+    usbpd(voltConf.toInt());
+  } else {
+    usbpd(volt);
+  }
+
+  //static int printmillisold = 0;
+  //int printmillis = millis();
+
+  //if (printmillis - printmillisold > 1000) {
+    //if (voltConf.toInt() < volt) {
+    ///  usbpd(voltConf.toInt());
+    //}
+    //printmillisold = printmillis;
+  //}
+
+  /*if (Conf == "1" && (voltConf.toInt() > volt)) {
+    //digitalWrite(POUT,LOW);
+    Serial.print("POUT Low Conf: ");
+    Serial.print(voltConf.toInt());
+    Serial.print(" ");  
+    Serial.print(volt);
     //digitalWrite(LED2R,LOW);
     //digitalWrite(LED2G,HIGH);
   } else if (Conf == "0" && Modo == "Local" && (saidaTenL.toInt() > volt)) {
-    digitalWrite(POUT,LOW);
-    //Serial.print("POUT Low Local: ");
-    //Serial.print(voltConf.toInt());
-    //Serial.print(" ");
-    //Serial.print(volt);
+    //digitalWrite(POUT,LOW);
+    Serial.print("POUT Low Local: ");
+    Serial.print(voltConf.toInt());
+    Serial.print(" ");
+    Serial.print(volt);
     //digitalWrite(LED2R,LOW);
     //digitalWrite(LED2G,HIGH);
   } else if (Conf == "0" && Modo == "Cliente" && (saidaTenC.toInt()  > volt)) {
-    digitalWrite(POUT,LOW);
-    //Serial.print("POUT Low cliente: ");
-    //Serial.print(voltConf.toInt());
-    //Serial.print(" ");
-    //Serial.print(volt);
+    //digitalWrite(POUT,LOW);
+    Serial.print("POUT Low cliente: ");
+    Serial.print(voltConf.toInt());
+    Serial.print(" ");
+    Serial.print(volt);
     //digitalWrite(LED2R,LOW);
     //digitalWrite(LED2G,HIGH);
   } else if (Conf == "0" && Modo == "Source" && (saidaTenS.toInt() > volt)) {
-    digitalWrite(POUT,LOW);
-    //Serial.print("POUT Low source: ");
-    //Serial.print(voltConf.toInt());
-    //Serial.print(" ");
-    //Serial.print(volt);
+    //digitalWrite(POUT,LOW);
+    Serial.print("POUT Low source: ");
+    Serial.print(voltConf.toInt());
+    Serial.print(" ");
+    Serial.print(volt);
     //digitalWrite(LED2R,LOW);
     //digitalWrite(LED2G,HIGH);
   } else {
-    //Serial.println(volt);
-    digitalWrite(POUT,HIGH);
-    //Serial.println("POUT High");
+    Serial.println(volt);
+    //digitalWrite(POUT,HIGH);
+    Serial.println("POUT High");
     //digitalWrite(LED2R,HIGH);
-  }
+  } */
   return state;
 }
 
@@ -1313,7 +1332,7 @@ int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char*
     }
     if (RA == "S") {
         remoteControlSetup();
-    }
+    } 
     //Serial.println("Subscribing MountPoint is OK");
     sourceError = ntripS.subStation(client, HTTPPort, Host, MountPoint, rev, NTPUser, NTPPass, srcSTR);
     if (sourceError == 0 || sourceError == 2) {
@@ -1332,21 +1351,23 @@ int NTRIPSourceStart(Stream& serialPort, WiFiClient& client, int HTTPPort, char*
   char ch[512];
   int readcount = 0;
   if (client.connected()) {
-    while (serialPort.available()) {
+    if (portConnected == 1) {
       while (serialPort.available()) {
-        ch[readcount] = serialPort.read();
-        readcount++;
-        if (readcount > 511)break;
-        //Serial.println(Serial2.read());
-      }//buffering
-      //Serial.print("readcount: ");Serial.println(readcount);
-      packageDisp = readcount;
-      package = readcount;
-      client.write((uint8_t*)ch, readcount);
-      //dataPass = readcount;
-      readcount = 0;
-      memset(ch,' ',readcount*sizeof(char));
-      timer = 0;
+        while (serialPort.available()) {
+          ch[readcount] = serialPort.read();
+          readcount++;
+          if (readcount > 511)break;
+          //Serial.println(Serial2.read());
+        }//buffering
+        //Serial.print("readcount: ");Serial.println(readcount);
+        packageDisp = readcount;
+        package = readcount;
+        client.write((uint8_t*)ch, readcount);
+        //dataPass = readcount;
+        readcount = 0;
+        memset(ch,' ',readcount*sizeof(char));
+        timer = 0;
+      }
     }
     timeCount();
     unsigned long currentMillisTimer = millis();
@@ -1392,10 +1413,13 @@ int localError;
 unsigned long previousMillisLocal = 0;
 int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, char* Mountpoint){
   char client_data[1024];
+  //forwardServer.begin();
   while(client.connected()){
     int counter = 0; 
     //Serial.println("while1");
+    Serial.println("while1");
     while (client.available()>0){  
+      Serial.println("while2");
       client_data[counter] = client.read();
       counter++;
       if(client.available()==0){
@@ -1450,6 +1474,8 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
                 //mntp incorreto   
               }
               Serial.println("tudo ok!");
+              forwardServer.begin();
+
               while(client.connected()){
                 if (digitalRead(PAGE) == HIGH) {
                   //Serial1.println("teste");
@@ -1475,42 +1501,72 @@ int NTRIPLocal(WiFiClient& client, Stream& serialPort, char* User, char* Pass, c
                 String(WiFi.softAPgetStationNum()), cportNtpL, cbaudrateL, cparidadeL, cdatbitL, cbitsParaL, ccontrFluxL, csaidaTenL,
                 String(package), (String(timer) + "S"), "BDR02", "V1.0", String(ESP.getEfuseMac()));
                 displaybdr.display.display();
-                if(serialPort.available()) {  
-                  previousMillis = millis();
-                  timer = 0;
-                  char ch_ap[1024];
-                  int readcount_ap = 0;
-                  Serial.println(serialPort.available());
-                  while (serialPort.available()) {
-                    ch_ap[readcount_ap] = serialPort.read();
-                    readcount_ap++;
-                    if (readcount_ap > 511)break;
-                    //Serial.println("while4");
-                  }//buffering
-                  
-                  client.write((uint8_t*)ch_ap, readcount_ap);
-                  Serial.println(readcount_ap);
-                  packageDisp = readcount_ap;
-                  package = readcount_ap;
-                }
-                 else {
-                  unsigned long currentMillisLocal = millis();
-                  if (currentMillisLocal - previousMillisLocal >= 1000) {
-                    previousMillisLocal = currentMillisLocal;
-                    if (timer < 99) {
-                      timer++;
-                      if (timer > 5) {
-                        package = 0;
+                if (portConnected == 1) {
+                  if(serialPort.available()) {  
+                    previousMillis = millis();
+                    timer = 0;
+                    char ch_ap[1024];
+                    int readcount_ap = 0;
+                    Serial.println(serialPort.available());
+                    while (serialPort.available()) {  
+                      ch_ap[readcount_ap] = serialPort.read();
+                      readcount_ap++;
+                      if (readcount_ap > 511)break;
+                      //Serial.println("while4");
+                    }//buffering
+                    
+                    client.write((uint8_t*)ch_ap, readcount_ap);
+                    Serial.println(readcount_ap);
+                    packageDisp = readcount_ap;
+                    package = readcount_ap;
+                  }
+                  else {
+                    unsigned long currentMillisLocal = millis();
+                    if (currentMillisLocal - previousMillisLocal >= 1000) {
+                      previousMillisLocal = currentMillisLocal;
+                      if (timer < 99) {
+                        timer++;
+                        if (timer > 5) {
+                          package = 0;
+                        }
+                      } else {
+                        timer = 0;
+                        localError = 0;
+                        return 1;
                       }
-                    } else {
-                      timer = 0;
-                      localError = 0;
-                      return 1;
+                    }
+                    if (currentMillisLocal - previousMillisPisca >= 50) {
+                      previousMillisPisca = currentMillisLocal;
+                      packageDisp = 0;
                     }
                   }
-                  if (currentMillisLocal - previousMillisPisca >= 50) {
-                    previousMillisPisca = currentMillisLocal;
-                    packageDisp = 0;
+                } else {
+                  if (!forwardClient || !forwardClient.connected()) {
+                    forwardClient = forwardServer.available();
+                  }
+
+                  if (forwardClient && forwardClient.connected()) {
+                    Serial.print("Cliente conectado na 2102: ");
+                    Serial.println(forwardClient.remoteIP());
+                  }
+
+                  if (forwardClient && forwardClient.connected()) {
+                    char ch_ap[1024];
+                    int readcount_ap = 0;
+                    while (client.available()) {
+                      ch_ap[readcount_ap++] = client.read();
+                      readcount_ap++;
+                      if (readcount_ap > 511) break;
+                    }
+                    /*while (Serial.available()) {
+                      ch_ap[readcount_ap++] = Serial.read();
+                      if (readcount_ap >= sizeof(ch_ap)) break;
+                    } */
+
+                    forwardClient.write((uint8_t*)ch_ap, readcount_ap);
+                    forwardClient.write("teste");
+                    Serial.print("Enviado ao cliente 2102: ");
+                    Serial.println(readcount_ap);
                   }
                 }
                 if (client.available()!=0) {
