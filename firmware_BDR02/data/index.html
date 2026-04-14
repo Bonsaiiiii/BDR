@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<style>
+  .accordion {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .accordion-header {
+    background-color: #007bff;
+    color: white;
+    padding: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .arrow {
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+
+  .accordion-body.open + .accordion-header .arrow,
+  .accordion-body.open ~ .accordion-header .arrow,
+  .accordion-header.open .arrow {
+    transform: rotate(90deg);
+  }
+
+  .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    padding: 0 1rem;
+  }
+
+  .accordion-body.open {
+    padding: 1rem;
+    max-height: 1000px;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    font-weight: 600;
+  }
+
+  .form-control, .form-select, .btn {
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+
+  .btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.75rem;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    background-color: #0056b3;
+  }
+</style>
+
+<body class="mx-auto">
+
+  <div id="main-content">
+    <div class="my-4">
+      <h1 class="text-center" style="font-size: 2.5rem; color: #000000;">
+        Configurações NTRIP
+      </h1>
+      <div id="dataContainer"></div>
+    </div>
+
+    <script>
+      async function fetchData() {
+        const response = await fetch('/BDR.json');
+        const data = await response.json();
+
+        const container = document.getElementById('dataContainer');
+        container.innerHTML = '';
+
+        const ntripArray = data.ntripConfS;
+
+        if (Array.isArray(ntripArray) && ntripArray.length > 0) {
+          const ntripData = { ...ntripArray[0] };
+          delete ntripData.senS;
+
+          const accordion = document.createElement('div');
+          accordion.className = 'accordion';
+
+          const header = document.createElement('div');
+          header.className = 'accordion-header';
+          header.onclick = () => {
+            body.classList.toggle('open');
+            arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+          };
+          header.innerHTML = `Configuração NTRIP Atual <span class="arrow" id="currentArrow">V</span>`;
+
+          const arrow = header.querySelector('.arrow');
+
+          const body = document.createElement('div');
+          body.className = 'accordion-body open';
+          arrow.style.transform = 'rotate(180deg)';
+
+          const labelMap = {
+            hostNtpS: "IP do host NTRIP:",
+            portNtpS: "Porta:",
+            mtpntS: "Mount Point:",
+            sendRev2: "Usar Usuário NTRIP?",
+            userS: "Usuário:"
+          };
+
+          for (const key in ntripData) {
+            const value = ntripData[key];
+            const label = labelMap[key] || key;
+            const item = document.createElement('div');
+            item.className = 'mb-2';
+            item.innerHTML =
+              `<strong>${label}</strong> <span class="text-dark">${key === 'sendRev2' ? (value === 'S' ? 'Sim' : 'Não') : value}</span>`;
+            body.appendChild(item);
+          }
+
+          body.innerHTML += `
+            <p><strong>Uptime: </strong><span id="timeCountVal">Carregando...</span></p>
+            <p><strong>Latência: </strong><span id="timer">Carregando...</span> <span> Segundos</span></p>
+            <p><strong>Último pacote: </strong><span id="packageDisp">Carregando...</span></p>
+          `;
+
+          accordion.appendChild(header);
+          accordion.appendChild(body);
+          container.appendChild(accordion);
+        } else {
+          container.innerHTML = '<p class="text-danger">ntripConfS não encontrado ou está vazio.</p>';
+        }
+      }
+    
+      fetchData();
+    </script>
+
+    <script>
+      async function fetchTimeCount() {
+        try {
+          const res = await fetch('/getTime');
+          const data = await res.json();
+    
+          document.getElementById('timeCountVal').textContent = data.timeCountVal;
+          document.getElementById('timer').textContent = data.timer;
+          document.getElementById('packageDisp').textContent = data.packageDisp;
+        } catch (err) {
+          document.getElementById('timeCountVal').textContent = '--:--';
+          document.getElementById('timer').textContent = '--';
+          document.getElementById('packageDisp').textContent = '---';
+        }
+      }
+    
+      fetchTimeCount();
+      setInterval(fetchTimeCount, 3000);
+    </script>
+
+    <div class="accordion">
+      <div class="accordion-header" onclick="toggleAccordion()">
+        Configurações Source
+        <span class="arrow" id="accordionArrow">V</span>
+      </div>
+      <div class="accordion-body" id="accordionBody">
+        <form onsubmit="enviaSource(); return false;" id="sourceform" action="/remotesourcebdr">
+          <div class="form-group">
+            <label for="ip_id_S" class="form-label">IP do host NTRIP</label>
+            <input type="text" class="form-control" maxlength="50"
+              id="ip_id_S" name="IP" required>
+          </div>
+
+          <div class="form-group">
+            <label for="port_id_S" class="form-label">Porta do host NTRIP</label>
+            <input type="text" class="form-control" maxlength="5" id="port_id_S" name="port" value="2101" readonly>
+          </div>
+
+          <div class="form-group">
+            <label for="mountpt_id_S" class="form-label">Mount point do host NTRIP</label>
+            <input type="text" class="form-control" maxlength="20" id="mountpt_id_S" name="mountpt" required>
+          </div>
+
+          <div class="form-group">
+            <label for="send_Rev_2" class="form-label">Utilizar Usuário NTRIP?</label>
+            <select class="form-select" id="send_Rev_2" name="sendRev2">
+              <option value="S">Sim</option>
+              <option value="N">Não</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="user_id_S" class="form-label">Usuário do host NTRIP</label>
+            <input type="text" class="form-control" maxlength="20" id="user_id_S" name="user">
+          </div>
+
+          <div class="form-group">
+            <label for="userpass_id_S" class="form-label">Senha do host NTRIP</label>
+            <input type="text" class="form-control" maxlength="20" id="userpass_id_S" name="userpass" required>
+          </div>
+
+          <div class="form-group text-center">
+            <button type="submit" class="btn">Programar configurações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function toggleAccordion() {
+        const body = document.getElementById('accordionBody');
+        const arrow = document.getElementById('accordionArrow');
+        body.classList.toggle('open');
+        arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
+    </script>
+      
+  <script>
+    function enviaSource() // função, que quando clicar no botão, será enviado uma requisição POST para o server
+    {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", '/remotesourcebdr', true); // inicializa uma nova requisição, ou reinicializa uma requisição já existente.
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); // define o valor do cabeçalho de uma requisição HTTP
+      //enviando
+      var IpS = document.getElementById("ip_id_S").value;
+      var PortS = document.getElementById("port_id_S").value;
+      var MountptS = document.getElementById("mountpt_id_S").value;
+      var sendRev2 = document.getElementById("send_Rev_2").value;
+      var UserS = document.getElementById("user_id_S").value;
+      var UserpassS = document.getElementById("userpass_id_S").value;
+
+      xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          // Typical action to be performed when the document is ready:
+          alert("Salvo com sucesso!");
+        } else if (this.readyState == 4 && this.status != 200) {
+          alert("Requisição não foi enviada, pois houve alguma falha");
+        }
+      };
+      xhr.send(
+        "hostNtpS=" + encodeURIComponent(IpS) +
+        "&portNtpS=" + encodeURIComponent(PortS) +
+        "&mtpntS=" + encodeURIComponent(MountptS) +
+        "&sendRev2=" + encodeURIComponent(sendRev2) +
+        "&userS=" + encodeURIComponent(UserS) +
+        "&senS=" + encodeURIComponent(UserpassS));
+        // envia uma requisição para o servidor.
+    }
+  </script>
+</body>
+
+</html>

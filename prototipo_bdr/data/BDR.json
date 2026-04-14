@@ -1,0 +1,98 @@
+{
+    "portaSupL": [
+      {
+        "saidaTenL": "12V",
+        "baudrateL": "115200",
+        "paridadeL": "None",
+        "bitsParaL": "1",
+        "contrFluxL": "None",
+        "datbitL": "5"
+      }
+    ],
+    "wifiL": [
+      {
+        "ssidL": "Caster_BDR",
+        "senwiL": "12345678"
+      }
+    ],
+    "ntripConfL": [
+      {
+        "hostNtpL": "192.168.0.1",
+        "portNtpL": "2101",
+        "mtpntL": "BDR01",
+        "userL": "user",
+        "senL": "1234"
+      }
+    ],
+    "portaSupC": [
+      {
+        "saidaTenC": "12V",
+        "baudrateC": "115200",
+        "paridadeC": "None",
+        "bitsParaC": "1",
+        "contrFluxC": "None",
+        "datbitC": "5"
+      }
+    ],
+    "wifiC": [
+      {
+        "ssidC": "HugenPLUS",
+        "senwiC": "H32851112"
+      }
+    ],
+    "ntripConfC": [
+      {
+        "hostNtpC": "192.168.3.46",
+        "portNtpC": "2101",
+        "mtpntC": "IFSC0",
+        "userC": "SNIP",
+        "senC": "1234"
+      }
+    ],
+    "latLong": [
+      {
+        "sendLatLong": "S",
+        "lat": "00",
+        "lon": "00",
+        "alt": "00",
+        "pre": "00",
+        "utc": "00:00:00"
+      }
+    ],
+    "portaSupS": [
+      {
+        "saidaTenS": "12V",
+        "baudrateS": "115200",
+        "paridadeS": "None",
+        "bitsParaS": "1",
+        "contrFluxS": "None",
+        "datbitS": "5"
+      }
+    ],
+    "wifiS": [
+      {
+        "ssidS": "HugenPLUS",
+        "senwiS": "H32851112"
+      }
+    ],
+    "ntripConfS": [
+      {
+        "hostNtpS": "192.168.3.46",
+        "portNtpS": "2101",
+        "mtpntS": "IFSC0",
+        "sendRev2": "S",
+        "userS": "SNIP",
+        "senS": "1234"
+      }
+    ],
+    "avancado": [
+      {
+        "Modo": "Local",
+        "Perfil": "Default",
+        "Mac": "00:00",
+        "Conf": "1",
+        "voltConf": "12V",
+        "wifiEr": "0"
+      }
+    ]
+  }
